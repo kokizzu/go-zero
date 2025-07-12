@@ -4679,6 +4679,23 @@ func TestUnmarshal_EnvInt(t *testing.T) {
 	}
 }
 
+func TestUnmarshal_EnvInt64(t *testing.T) {
+	type Value struct {
+		Age int64 `key:"age,env=TEST_NAME_INT64"`
+	}
+
+	const (
+		envName = "TEST_NAME_INT64"
+		envVal  = "88"
+	)
+	t.Setenv(envName, envVal)
+
+	var v Value
+	if assert.NoError(t, UnmarshalKey(emptyMap, &v)) {
+		assert.Equal(t, int64(88), v.Age)
+	}
+}
+
 func TestUnmarshal_EnvIntOverwrite(t *testing.T) {
 	type Value struct {
 		Age int `key:"age,env=TEST_NAME_INT"`
@@ -4784,20 +4801,33 @@ func TestUnmarshal_EnvBoolBad(t *testing.T) {
 }
 
 func TestUnmarshal_EnvDuration(t *testing.T) {
-	type Value struct {
-		Duration time.Duration `key:"duration,env=TEST_NAME_DURATION"`
-	}
-
 	const (
 		envName = "TEST_NAME_DURATION"
 		envVal  = "1s"
 	)
 	t.Setenv(envName, envVal)
 
-	var v Value
-	if assert.NoError(t, UnmarshalKey(emptyMap, &v)) {
-		assert.Equal(t, time.Second, v.Duration)
-	}
+	t.Run("valid duration", func(t *testing.T) {
+		type Value struct {
+			Duration time.Duration `key:"duration,env=TEST_NAME_DURATION"`
+		}
+
+		var v Value
+		if assert.NoError(t, UnmarshalKey(emptyMap, &v)) {
+			assert.Equal(t, time.Second, v.Duration)
+		}
+	})
+
+	t.Run("ptr of duration", func(t *testing.T) {
+		type Value struct {
+			Duration *time.Duration `key:"duration,env=TEST_NAME_DURATION"`
+		}
+
+		var v Value
+		if assert.NoError(t, UnmarshalKey(emptyMap, &v)) {
+			assert.Equal(t, time.Second, *v.Duration)
+		}
+	})
 }
 
 func TestUnmarshal_EnvDurationBadValue(t *testing.T) {
